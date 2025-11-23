@@ -5,7 +5,7 @@ import pandas as pd
 location = pvlib.location.Location(latitude=34, longitude=-118)
 
 # 2. 时间序列
-times = pd.date_range('2024-01-01', '2024-01-02', freq='1h', tz='UTC')
+times = pd.date_range('2024-01-01', '2025-01-02', freq='1h', tz='UTC')
 
 # 3. 太阳位置
 solpos = location.get_solarposition(times)
@@ -29,4 +29,10 @@ pv_power = pvlib.pvsystem.pvwatts_dc(
     gamma_pdc=-0.003    # 温度系数（1/°C）
 )
 
-print(pv_power)
+# convert pv_power to a pandas Series (align with `times`) and save with POA
+pv_series = pd.Series(pv_power, index=times, name='pdc')
+df = pd.DataFrame({
+    'poa_global': poa['poa_global'],
+    'pdc': pv_series
+})
+df.to_csv('solar_output.csv', index_label='time')
