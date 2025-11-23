@@ -1,7 +1,5 @@
 import pandas as pd
-
 import pvlib
-import pandas as pd
 import numpy as np
 
 
@@ -28,32 +26,22 @@ def Solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
 
     latitude, longitude, start_date, end_date = para
 
-    # ===========================
     # 1. 时间序列
-    # ===========================
     times = pd.date_range(start=start_date, end=end_date, freq=freq, tz="Asia/Shanghai")
 
-    # ===========================
     # 2. 地点对象
-    # ===========================
     location = pvlib.location.Location(latitude, longitude, tz="Asia/Shanghai", altitude=0)
 
-    # ===========================
     # 3. 太阳位置
-    # ===========================
     solpos = location.get_solarposition(times)
     solar_zenith = solpos["apparent_zenith"]
     solar_azimuth = solpos["azimuth"]
 
-    # ===========================
     # 4. 辐照度输入处理
-    # ===========================
     N = len(times)
 
     # Convert scalars to arrays
-   
     arr = lambda x : np.full(N, x) if np.isscalar(x) else np.array(x)
- 
 
     # Case 1: Only GHI → use Erbs model to get DNI, DHI
     if ghi is not None and dni is None and dhi is None:
@@ -63,7 +51,6 @@ def Solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
         dni = pvlib.irradiance.dirint(
             ghi, solar_zenith, times
         )  # W/m2
-       
 
     # Case 2: Provided DNI and DHI → compute GHI
     if ghi is None and dni is not None and dhi is not None:
@@ -73,17 +60,13 @@ def Solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
     if ghi is not None:
         ghi = arr(ghi)
 
-    # ===========================
     # 5. surface_tilt 处理（允许时间变化）
-    # ===========================
     if np.isscalar(surface_tilt):
         tilt = np.full(N, surface_tilt)
     else:
         tilt = np.array(surface_tilt)
 
-    # ===========================
     # 6. 计算 POA
-    # ===========================
     #将NaN转为0
     dni = np.where(np.isnan(dni)==True, 0, dni)
     dhi = np.where(np.isnan(dhi)==True, 0, dhi)
@@ -98,9 +81,7 @@ def Solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
         albedo=albedo,
     )
 
-    # ===========================
     # 7. PVWatts 功率模型
-    # ===========================
     pdc = pvlib.pvsystem.pvwatts_dc(
         poa["poa_global"],
         temp_cell=45,
@@ -108,9 +89,7 @@ def Solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
         gamma_pdc=-0.003
     )
 
-    # ===========================
     # 8. 输出 dataframe
-    # ===========================
     df = pd.DataFrame({
         "solar_zenith": solar_zenith,
         "solar_azimuth": solar_azimuth,
@@ -131,4 +110,22 @@ df = Solar_Energy_calc(
     para=[31.2, 121.5, "2025-05-01", "2025-05-03"],
     ghi=600
 )
-print(df)
+
+# Compute hours per time step (robust to single-point series)
+if len(df.index) > 1:
+    hours_per_period = (df.index[1] - df.index[0]).total_seconds() / 3600.0
+else:
+    hours_per_period = 1.0
+
+# Energy per period in Wh, then kWh
+df['energy_Wh'] = df['pdc'] * hours_per_period
+df['energy_kWh'] = df['energy_Wh'] / 1000.0
+
+# Aggregate to annual totals (year-end frequency). Use 'YE' to avoid FutureWarning.
+annual = df['energy_kWh'].resample('YE').sum()
+annual.index = annual.index.year
+annual_df = annual.to_frame(name='annual_energy_kWh')
+
+# Print and save annual totals (change path if desired)
+print(annual_df)
+annual_df.to_csv("/Users/pinxian/PycharmProjects/Solar-Panel-Mathematical-Modelling/annual_energy.csv", index=True, encoding="utf-8-sig")
