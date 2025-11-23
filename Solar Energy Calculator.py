@@ -30,12 +30,13 @@ def Solar_Energy_calc(latitude, longitude, start_date, end_date):
         gamma_pdc=-0.003    # 温度系数（1/°C）
     )
 
-    return pv_power
+    # 6. 输出结果保存为CSV文件
+    pv_series = pd.Series(pv_power, index=times, name='pdc')
+    df = pd.DataFrame({
+        'poa_global': poa['poa_global'],
+        'pdc': pv_series
+    })
+    df.to_csv('solar_output.csv', index_label='time')
 
-# convert pv_power to a pandas Series (align with `times`) and save with POA
-pv_series = pd.Series(pv_power, index=times, name='pdc')
-df = pd.DataFrame({
-    'poa_global': poa['poa_global'],
-    'pdc': pv_series
-})
-df.to_csv('solar_output.csv', index_label='time')
+
+Solar_Energy_calc(29, 106, "2025-01-01", "2025-01-07")
