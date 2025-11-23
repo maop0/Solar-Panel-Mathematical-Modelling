@@ -3,7 +3,7 @@ import pandas as pd
 
 def Solar_Energy_calc(latitude, longitude, start_date, end_date):
     # 1. 地点
-    location = pvlib.location.Location(latitude=latitude, longitude=longitude, tz='Asia/Beijing', altitude=100)
+    location = pvlib.location.Location(latitude=latitude, longitude=longitude, tz='Asia/Shanghai', altitude=100)
 
     # 2. 时间序列
     times = pd.date_range(start_date, end_date, freq='1h', tz='UTC')
