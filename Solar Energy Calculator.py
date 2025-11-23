@@ -28,18 +28,24 @@ def Solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
 
     latitude, longitude, start_date, end_date = para
 
-    # 1. 时间序列
+    # 时间序列
     times = pd.date_range(start=start_date, end=end_date, freq=freq, tz="Asia/Shanghai")
 
-    # 2. 地点对象
+    # 地点对象
     location = pvlib.location.Location(latitude, longitude, tz="Asia/Shanghai", altitude=0)
 
-    # 3. 太阳位置
+    # 气象数据
+    current_dir = os.path.dirname(__file__)
+    epw_file_path = os.path.join(current_dir, 'data', 'Chongqing.epw')
+    weather_data, meta_data = pvlib.iotools.read_epw(epw_file_path)
+
+
+    # 太阳位置
     solpos = location.get_solarposition(times)
     solar_zenith = solpos["apparent_zenith"]
     solar_azimuth = solpos["azimuth"]
 
-    # 4. 辐照度输入处理
+    # 辐照度输入处理
     N = len(times)
 
     # Convert scalars to arrays
