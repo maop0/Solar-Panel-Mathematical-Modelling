@@ -1,6 +1,8 @@
 import pandas as pd
 import pvlib
 import numpy as np
+from pathlib import Path
+import os
 
 
 def Solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
@@ -128,4 +130,22 @@ annual_df = annual.to_frame(name='annual_energy_kWh')
 
 # Print and save annual totals (change path if desired)
 print(annual_df)
-annual_df.to_csv("/Users/pinxian/PycharmProjects/Solar-Panel-Mathematical-Modelling/annual_energy.csv", index=True, encoding="utf-8-sig")
+
+# Determine a portable output directory (script folder if available, otherwise cwd)
+try:
+    script_dir = Path(__file__).parent
+except NameError:
+    script_dir = Path.cwd()
+
+output_dir = script_dir / "outputs"
+output_dir.mkdir(parents=True, exist_ok=True)
+output_path = output_dir / "annual_energy.csv"
+
+try:
+    annual_df.to_csv(output_path, index=True, encoding="utf-8-sig")
+    print(f"Saved annual energy to: {output_path}")
+except Exception as e:
+    # fallback to user's home directory
+    fallback = Path.home() / "annual_energy.csv"
+    annual_df.to_csv(fallback, index=True, encoding="utf-8-sig")
+    print(f"Failed to save to {output_path!s}, saved to {fallback!s} instead. Error: {e}")
