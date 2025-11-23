@@ -32,3 +32,10 @@ def Solar_Energy_calc(latitude, longitude, start_date, end_date):
 
     return pv_power
 
+# convert pv_power to a pandas Series (align with `times`) and save with POA
+pv_series = pd.Series(pv_power, index=times, name='pdc')
+df = pd.DataFrame({
+    'poa_global': poa['poa_global'],
+    'pdc': pv_series
+})
+df.to_csv('solar_output.csv', index_label='time')
