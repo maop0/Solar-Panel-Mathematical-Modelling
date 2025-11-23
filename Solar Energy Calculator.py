@@ -1,6 +1,7 @@
 import pandas as pd
 
-def Solar_Energy_calc(latitude, longitude, start_date, end_date):
+def Solar_Energy_calc(surface_tilt,surface_azimuth,para = []):
+    latitude, longitude, start_date, end_date = para
     # 1. 地点
     location = pvlib.location.Location(latitude=latitude, longitude=longitude, tz='Asia/Shanghai', altitude=100)
 
@@ -12,8 +13,8 @@ def Solar_Energy_calc(latitude, longitude, start_date, end_date):
 
     # 4. 辐照度模型
     poa = pvlib.irradiance.get_total_irradiance(
-        surface_tilt=30,              # 倾角
-        surface_azimuth=180,          # 朝向
+        surface_tilt=surface_tilt,              # 倾角
+        surface_azimuth= surface_azimuth,          # 朝向
         dni=800,                      # 直射辐照度
         ghi=600,                      # 水平面全球辐照度
         dhi=100,                      # 水平面散射辐照度
