@@ -53,9 +53,7 @@ def Solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
     # Convert scalars to arrays
    
     arr = lambda x : np.full(N, x) if np.isscalar(x) else np.array(x)
-    dni = arr(dni)
-    dhi = arr(dhi)
-    ghi = arr(ghi)
+ 
 
     # Case 1: Only GHI → use Erbs model to get DNI, DHI
     if ghi is not None and dni is None and dhi is None:
@@ -65,6 +63,7 @@ def Solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
         dni = pvlib.irradiance.dirint(
             ghi, solar_zenith, times
         )  # W/m2
+       
 
     # Case 2: Provided DNI and DHI → compute GHI
     if ghi is None and dni is not None and dhi is not None:
@@ -85,6 +84,9 @@ def Solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
     # ===========================
     # 6. 计算 POA
     # ===========================
+    #将NaN转为0
+    dni = np.where(np.isnan(dni)==True, 0, dni)
+    dhi = np.where(np.isnan(dhi)==True, 0, dhi)
     poa = pvlib.irradiance.get_total_irradiance(
         surface_tilt=tilt,
         surface_azimuth=surface_azimuth,
@@ -129,4 +131,4 @@ df = Solar_Energy_calc(
     para=[31.2, 121.5, "2025-05-01", "2025-05-03"],
     ghi=600
 )
-print(df.head())
+print(df)
