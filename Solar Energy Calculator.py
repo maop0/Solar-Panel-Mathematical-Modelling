@@ -1,42 +1,132 @@
 import pandas as pd
 
-def Solar_Energy_calc(surface_tilt,surface_azimuth,para = []):
+import pvlib
+import pandas as pd
+import numpy as np
+
+
+def Solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
+                      dni=None, dhi=None, ghi=None,
+                      albedo=0.2, freq='1h'):
+    """
+    计算太阳能板输出功率与板面辐照度（POA）
+    支持 tilt 随时间变化，支持 DNI/DHI/GHI 自动推算关系。
+
+    参数
+    ----
+    surface_tilt : float 或 array
+        面倾角（度），可为时间序列的 np.array
+    surface_azimuth : float
+        面朝向（度），北=0° 顺时针
+    para : [lat, lon, start_date, end_date]
+    dni, dhi, ghi : float 或 array，可选
+        如果缺少，会自动推算。
+    albedo : float
+    freq : str
+        时间分辨率
+    """
+
     latitude, longitude, start_date, end_date = para
-    # 1. 地点
-    location = pvlib.location.Location(latitude=latitude, longitude=longitude, tz='Asia/Shanghai', altitude=100)
 
-    # 2. 时间序列
-    times = pd.date_range(start_date, end_date, freq='1h', tz='UTC')
+    # ===========================
+    # 1. 时间序列
+    # ===========================
+    times = pd.date_range(start=start_date, end=end_date, freq=freq, tz="Asia/Shanghai")
 
+    # ===========================
+    # 2. 地点对象
+    # ===========================
+    location = pvlib.location.Location(latitude, longitude, tz="Asia/Shanghai", altitude=0)
+
+    # ===========================
     # 3. 太阳位置
+    # ===========================
     solpos = location.get_solarposition(times)
+    solar_zenith = solpos["apparent_zenith"]
+    solar_azimuth = solpos["azimuth"]
 
-    # 4. 辐照度模型
+    # ===========================
+    # 4. 辐照度输入处理
+    # ===========================
+    N = len(times)
+
+    # Convert scalars to arrays
+   
+    arr = lambda x : np.full(N, x) if np.isscalar(x) else np.array(x)
+    dni = arr(dni)
+    dhi = arr(dhi)
+    ghi = arr(ghi)
+
+    # Case 1: Only GHI → use Erbs model to get DNI, DHI
+    if ghi is not None and dni is None and dhi is None:
+        dhi = pvlib.irradiance.erbs(
+            ghi, solar_zenith, times
+        )["dhi"].values
+        dni = pvlib.irradiance.dirint(
+            ghi, solar_zenith, times
+        )  # W/m2
+
+    # Case 2: Provided DNI and DHI → compute GHI
+    if ghi is None and dni is not None and dhi is not None:
+        ghi = dhi + dni * np.cos(np.radians(solar_zenith))
+
+    # Case 3: All provided → trust user but convert to array
+    if ghi is not None:
+        ghi = arr(ghi)
+
+    # ===========================
+    # 5. surface_tilt 处理（允许时间变化）
+    # ===========================
+    if np.isscalar(surface_tilt):
+        tilt = np.full(N, surface_tilt)
+    else:
+        tilt = np.array(surface_tilt)
+
+    # ===========================
+    # 6. 计算 POA
+    # ===========================
     poa = pvlib.irradiance.get_total_irradiance(
-        surface_tilt=surface_tilt,              # 倾角
-        surface_azimuth= surface_azimuth,          # 朝向
-        dni=800,                      # 直射辐照度
-        ghi=600,                      # 水平面全球辐照度
-        dhi=100,                      # 水平面散射辐照度
-        solar_zenith=solpos['apparent_zenith'],   # 太阳天顶角
-        solar_azimuth=solpos['azimuth']           # 太阳方位角
+        surface_tilt=tilt,
+        surface_azimuth=surface_azimuth,
+        solar_zenith=solar_zenith,
+        solar_azimuth=solar_azimuth,
+        dni=dni,
+        ghi=ghi,
+        dhi=dhi,
+        albedo=albedo,
     )
 
-    # 5. 简单组件模型（PVWatts）
-    pv_power = pvlib.pvsystem.pvwatts_dc(
-        poa['poa_global'],  # 板面辐照度
-        temp_cell=45,       # 电池温度
-        pdc0=350,           # 组件标称功率（W），你可自行调整
-        gamma_pdc=-0.003    # 温度系数（1/°C）
+    # ===========================
+    # 7. PVWatts 功率模型
+    # ===========================
+    pdc = pvlib.pvsystem.pvwatts_dc(
+        poa["poa_global"],
+        temp_cell=45,
+        pdc0=350,
+        gamma_pdc=-0.003
     )
 
-    # 6. 输出结果保存为CSV文件
-    pv_series = pd.Series(pv_power, index=times, name='pdc')
+    # ===========================
+    # 8. 输出 dataframe
+    # ===========================
     df = pd.DataFrame({
-        'poa_global': poa['poa_global'],
-        'pdc': pv_series
-    })
-    df.to_csv('solar_output.csv', index_label='time')
+        "solar_zenith": solar_zenith,
+        "solar_azimuth": solar_azimuth,
+        "dni": dni,
+        "dhi": dhi,
+        "ghi": ghi,
+        "poa_global": poa["poa_global"],
+        "pdc": pdc,
+        "tilt": tilt,
+    }, index=times)
+
+    return df
 
 
-Solar_Energy_calc(29, 106, "2025-01-01", "2025-01-07")
+df = Solar_Energy_calc(
+    surface_tilt=30,
+    surface_azimuth=180,
+    para=[31.2, 121.5, "2025-05-01", "2025-05-03"],
+    ghi=600
+)
+print(df.head())
