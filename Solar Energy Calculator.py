@@ -1,7 +1,8 @@
 import pvlib
 import pandas as pd
 
-def Solar_Energy_calc(latitude, longitude, start_date, end_date):
+def Solar_Energy_calc(surface_tilt=30, surface_azimuth=180, pdc0=350,para=[None,None,None,None]):
+    latitude, longitude, start_date, end_date = para
     # 1. 地点
     location = pvlib.location.Location(latitude=latitude, longitude=longitude, tz='UTC')
 
@@ -13,8 +14,8 @@ def Solar_Energy_calc(latitude, longitude, start_date, end_date):
 
     # 4. 辐照度模型
     poa = pvlib.irradiance.get_total_irradiance(
-        surface_tilt=30,              # 倾角
-        surface_azimuth=180,          # 朝向
+        surface_tilt=surface_tilt,              # 倾角
+        surface_azimuth=surface_azimuth,          # 朝向
         dni=800,                      # 直射辐照度
         ghi=600,                      # 水平面全球辐照度
         dhi=100,                      # 水平面散射辐照度
@@ -36,7 +37,7 @@ def Solar_Energy_calc(latitude, longitude, start_date, end_date):
         'poa_global': poa['poa_global'],
         'pdc': pv_series
     })
-    df.to_csv('solar_output.csv', index_label='time')
+    return df
 
 
-Solar_Energy_calc(29, 106, "2025-01-01", "2025-01-07")
+print(Solar_Energy_calc(para = [29, 106, "2025-01-01", "2025-01-07"]))
