@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 import os
 
-def dual_solar_Energy_calc(albedo=0.2, freq='1h',loc = 'Chongqing.epw' ):
+def dual_solar_Energy_calc(albedo, freq='1h', loc = 'Chongqing.epw' ):
     """
     计算太阳能板输出功率与板面辐照度（POA）
     支持 tilt 随时间变化，支持 DNI/DHI/GHI 自动推算关系。
@@ -80,14 +80,14 @@ def dual_solar_Energy_calc(albedo=0.2, freq='1h',loc = 'Chongqing.epw' ):
     # 7. PVWatts 功率模型
     pdc = pvlib.pvsystem.pvwatts_dc(
         poa["poa_global"],
-        temp_cell=45,
+        temp_cell=weather_data['temp_air'].to_numpy()+20,
         pdc0=350,
         gamma_pdc=-0.003
     )
 
     # 使用逆变器模型计算交流功率
 
-    ac_power = pvlib.inverter.pvwatts(pdc, 300)
+    ac_power = pvlib.inverter.pvwatts(pdc, 350)
 
     # 输出 dataframe
     df = pd.DataFrame({
