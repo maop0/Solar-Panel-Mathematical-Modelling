@@ -7,6 +7,7 @@ import scipy.optimize as opt
 import numpy as np
 
 
+np.random.seed(42)
 
 #print('testing....')
 dualAxis = dual_axis.dual_solar_Energy_calc
