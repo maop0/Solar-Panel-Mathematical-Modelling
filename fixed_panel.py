@@ -89,13 +89,13 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,albedo=0.2, freq='1h',
     pdc = pvlib.pvsystem.pvwatts_dc(
         poa["poa_global"],
         temp_cell=45,
-        pdc0=350,
+        pdc0=350,   #<----------这里
         gamma_pdc=-0.003
     )
 
     # 使用逆变器模型计算交流功率
 
-    ac_power = pvlib.inverter.pvwatts(pdc, 300)
+    ac_power = pvlib.inverter.pvwatts(pdc, 300) #<---------这里
 
     # 输出 dataframe
     df = pd.DataFrame({

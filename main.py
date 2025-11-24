@@ -16,6 +16,7 @@ singleAxis = single_axis.single_solar_Energy_calc
 
 fixedPanel = fixed_panel.fixed_solar_Energy_calc
 
+#=============================在这里改位置！！！================================
 PLACE = 'Chongqing.epw'
 #PLACE = 'Lhasa.epw'
 #PLACE = 'Urumqi.epw'
