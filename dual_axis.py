@@ -4,9 +4,7 @@ import numpy as np
 from pathlib import Path
 import os
 
-def dual_solar_Energy_calc(axis_tilt, axis_azimuth,
-                           dni=None, dhi=None, ghi=None,
-                           albedo=0.2, freq='1h'):
+def dual_solar_Energy_calc(albedo=0.2, freq='1h',loc = 'Chongqing.epw' ):
     """
     计算太阳能板输出功率与板面辐照度（POA）
     支持 tilt 随时间变化，支持 DNI/DHI/GHI 自动推算关系。
@@ -31,7 +29,7 @@ def dual_solar_Energy_calc(axis_tilt, axis_azimuth,
 
     # 气象数据
     current_dir = os.path.dirname(__file__)
-    epw_file_path = os.path.join(current_dir, 'data', 'Chongqing.epw')
+    epw_file_path = os.path.join(current_dir, 'data', loc)
     weather_data, meta_data = pvlib.iotools.read_epw(epw_file_path)
 
     #times = pd.date_range(start="2022-01-01", end="2022-12-31", freq = '1h', tz="Asia/Shanghai")    # 地点对象
@@ -69,11 +67,7 @@ def dual_solar_Energy_calc(axis_tilt, axis_azimuth,
     dhi = weather_data['dhi']
     ghi = weather_data['ghi']
     # 5. surface_tilt 处理（允许时间变化）
-    if np.isscalar(axis_tilt):
-        tilt = np.full(N, axis_tilt)
-    else:
-        tilt = np.array(axis_tilt)
-
+    
     # 6. 计算 POA
 
 
@@ -105,7 +99,7 @@ def dual_solar_Energy_calc(axis_tilt, axis_azimuth,
         "poa_global": poa["poa_global"],
         "dc_power": pdc,
         "ac_power": ac_power,  # 输出逆变器交流功率
-        "tilt": tilt,
+     
     }, index=times)
 
 
