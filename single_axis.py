@@ -4,9 +4,7 @@ import numpy as np
 from pathlib import Path
 import os
 
-def single_solar_Energy_calc(axis_tilt, axis_azimuth,
-                             dni=None, dhi=None, ghi=None,
-                             albedo=0.2, freq='1h'):
+def single_solar_Energy_calc(axis_tilt, axis_azimuth,albedo=0.2, freq='1h',loc = 'Chongqing.epw'):
     """
     计算太阳能板输出功率与板面辐照度（POA）
     支持 tilt 随时间变化，支持 DNI/DHI/GHI 自动推算关系。
@@ -31,7 +29,7 @@ def single_solar_Energy_calc(axis_tilt, axis_azimuth,
 
     # 气象数据
     current_dir = os.path.dirname(__file__)
-    epw_file_path = os.path.join(current_dir, 'data', 'Chongqing.epw')
+    epw_file_path = os.path.join(current_dir, 'data', loc)
     weather_data, meta_data = pvlib.iotools.read_epw(epw_file_path)
 
     #times = pd.date_range(start="2022-01-01", end="2022-12-31", freq = '1h', tz="Asia/Shanghai")    # 地点对象

@@ -4,9 +4,7 @@ import numpy as np
 from pathlib import Path
 import os
 
-def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,
-                            dni=None, dhi=None, ghi=None,
-                            albedo=0.2, freq='1h'):
+def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,albedo=0.2, freq='1h',loc ='Chongqing.epw'):
     """
     计算太阳能板输出功率与板面辐照度（POA）
     支持 tilt 随时间变化，支持 DNI/DHI/GHI 自动推算关系。
@@ -32,7 +30,7 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,
 
     # 气象数据
     current_dir = os.path.dirname(__file__)
-    epw_file_path = os.path.join(current_dir, 'data', 'Chongqing.epw')
+    epw_file_path = os.path.join(current_dir, 'data', loc)
     weather_data, meta_data = pvlib.iotools.read_epw(epw_file_path)
 
     #times = pd.date_range(start="2022-01-01", end="2022-12-31", freq = '1h', tz="Asia/Shanghai")    # 地点对象
@@ -91,13 +89,13 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,
     pdc = pvlib.pvsystem.pvwatts_dc(
         poa["poa_global"],
         temp_cell=45,
-        pdc0=350,
+        pdc0=350,   #<----------这里
         gamma_pdc=-0.003
     )
 
     # 使用逆变器模型计算交流功率
 
-    ac_power = pvlib.inverter.pvwatts(pdc, 300)
+    ac_power = pvlib.inverter.pvwatts(pdc, 300) #<---------这里
 
     # 输出 dataframe
     df = pd.DataFrame({
