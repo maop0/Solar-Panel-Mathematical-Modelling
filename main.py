@@ -3,27 +3,29 @@ import fixed_panel
 import single_axis
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
-
 import numpy as np
+import warnings
 
+warnings.filterwarnings("ignore")
 
 np.random.seed(42)
 
-#print('testing....')
 dualAxis = dual_axis.dual_solar_Energy_calc
-
 singleAxis = single_axis.single_solar_Energy_calc
-
 fixedPanel = fixed_panel.fixed_solar_Energy_calc
 
 #=============================在这里改位置！！！================================
-PLACE = 'Chongqing.epw'
-#PLACE = 'Lhasa.epw'
-#PLACE = 'Urumqi.epw'
-print("\n======== THIS IS " +  PLACE+" ===========")
-fixedPanelSum = lambda x: fixedPanel(surface_tilt=x[0], surface_azimuth=x[1], albedo=0.2, freq='1h',loc = PLACE)['ac_power'].to_numpy().sum()*(-1)
-dualAxisSum = lambda : dualAxis(albedo=0.2, freq='1h',loc = PLACE)['ac_power'].to_numpy().sum()*(-1)
-singleAxisSum = lambda x: singleAxis(x[0], x[1],albedo=0.2, freq='1h',loc = PLACE)['ac_power'].to_numpy().sum()*(-1)
+#PLACE = 'Chongqing.epw' #albedo=0.2
+PLACE = 'Lhasa.epw'    #albedo=0.4
+#PLACE = 'Urumqi.epw'   #albedo=0.4
+print("\n======== THIS IS " + PLACE +" ===========")
+if(PLACE=='Chongqing.epw'):
+    alb = 0.2
+elif(PLACE=='Lhasa.epw' or PLACE=='Urumqi.epw'):
+    alb = 0.4
+fixedPanelSum = lambda x: fixedPanel(surface_tilt=x[0], surface_azimuth=x[1], albedo=alb, freq='1h',loc = PLACE)['ac_power'].to_numpy().sum()*(-1)
+dualAxisSum = lambda : dualAxis(albedo=alb, freq='1h', loc = PLACE)['ac_power'].to_numpy().sum()*(-1)
+singleAxisSum = lambda x: singleAxis(x[0], x[1], albedo=alb, freq='1h', loc = PLACE)['ac_power'].to_numpy().sum()*(-1)
 
 
 r = opt.minimize(fixedPanelSum,[0,0])
@@ -32,7 +34,7 @@ print(r)
 print(f"The optimum value for fixedPanelSum is {-fixedPanelSum(r.x)}\nwith surface_tilt and surface_azimuth being{r.x}")
 print("\nRunning, do not quit...")
 
-sig = opt.minimize(singleAxisSum,[0,0])
+sig = opt.minimize(singleAxisSum,[0,180])
 print("=========Results===========")
 print(sig)
 

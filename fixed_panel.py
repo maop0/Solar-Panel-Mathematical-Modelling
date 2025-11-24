@@ -4,13 +4,12 @@ import numpy as np
 from pathlib import Path
 import os
 
-def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,albedo=0.2, freq='1h',loc ='Chongqing.epw'):
+def fixed_solar_Energy_calc(surface_tilt, surface_azimuth, albedo, freq='1h',loc ='Chongqing.epw'):
     """
     计算太阳能板输出功率与板面辐照度（POA）
     支持 tilt 随时间变化，支持 DNI/DHI/GHI 自动推算关系。
 
     参数
-
     ----
     surface_tilt : float 或 array
         面倾角（度），可为时间序列的 np.array
@@ -23,8 +22,6 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,albedo=0.2, freq='1h',
     freq : str
         时间分辨率
     """
-
-
 
     # 时间序列
 
@@ -45,7 +42,7 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,albedo=0.2, freq='1h',
     end_ts = end_date.value
 
     # 切成 N 份 → 需要 N+1 个边界点
-    cut_points = np.linspace(start_ts, end_ts, N )
+    cut_points = np.linspace(start_ts, end_ts, N)
 
     # 转回日期
     times = pd.to_datetime(cut_points).tz_localize('Asia/Shanghai')
@@ -68,11 +65,7 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,albedo=0.2, freq='1h',
     dhi = weather_data['dhi']
     ghi = weather_data['ghi']
 
-
     # 6. 计算 POA
-
-
-
     poa = pvlib.irradiance.get_total_irradiance(
         surface_tilt=surface_tilt,
         surface_azimuth=surface_azimuth,
@@ -88,14 +81,14 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,albedo=0.2, freq='1h',
     # 7. PVWatts 功率模型
     pdc = pvlib.pvsystem.pvwatts_dc(
         poa["poa_global"],
-        temp_cell=45,
-        pdc0=350,   #<----------这里
+        temp_cell=weather_data['temp_air'].to_numpy()+20,
+        pdc0=350,
         gamma_pdc=-0.003
     )
 
     # 使用逆变器模型计算交流功率
 
-    ac_power = pvlib.inverter.pvwatts(pdc, 300) #<---------这里
+    ac_power = pvlib.inverter.pvwatts(pdc, 350) #<---------这里
 
     # 输出 dataframe
     df = pd.DataFrame({
