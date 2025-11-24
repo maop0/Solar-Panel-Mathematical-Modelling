@@ -112,5 +112,5 @@ def dual_solar_Energy_calc(axis_tilt, axis_azimuth,
     return df
 
 
-a = dual_solar_Energy_calc(axis_tilt=0, axis_azimuth=0, albedo=0.2, freq='1h')
-print(a)
+#a = dual_solar_Energy_calc(axis_tilt=0, axis_azimuth=0, albedo=0.2, freq='1h')
+#print(a)

@@ -124,6 +124,6 @@ def single_solar_Energy_calc(axis_tilt, axis_azimuth,
     return df
 
 
-a = single_solar_Energy_calc(axis_tilt=0, axis_azimuth=0, albedo=0.2, freq='1h')
-print(a)
+#a = single_solar_Energy_calc(axis_tilt=0, axis_azimuth=0, albedo=0.2, freq='1h')
+#print(a)
 

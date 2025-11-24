@@ -116,6 +116,6 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,
     return df
 
 
-a = fixed_solar_Energy_calc(surface_tilt=20, surface_azimuth=20, albedo=0.2, freq='1h')
-print(a)
+#a = fixed_solar_Energy_calc(surface_tilt=20, surface_azimuth=20, albedo=0.2, freq='1h')
+#print(a)
 
