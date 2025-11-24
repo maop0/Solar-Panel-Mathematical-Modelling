@@ -235,7 +235,7 @@ dfs = fixed_solar_Energy_calc (
 dfd = single_solar_Energy_calc(axis_tilt=0,axis_azimuth=90,
                                para=[31.2, 121.5, "2025-05-01", "2025-05-03"],
                                ghi=600)
-
+print(dfd)
 # Compute hours per time step (robust to single-point series)
 if len(df.index) > 1:
     hours_per_period = (df.index[1] - df.index[0]).total_seconds() / 3600.0
