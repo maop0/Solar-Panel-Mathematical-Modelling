@@ -16,6 +16,8 @@ singleAxis = single_axis.single_solar_Energy_calc
 fixedPanel = fixed_panel.fixed_solar_Energy_calc
 
 PLACE = 'Chongqing.epw'
+#PLACE = 'Lhasa.epw'
+#PLACE = 'Urumqi.epw'
 print("\n======== THIS IS " +  PLACE+" ===========")
 fixedPanelSum = lambda x: fixedPanel(surface_tilt=x[0], surface_azimuth=x[1], albedo=0.2, freq='1h',loc = PLACE)['ac_power'].to_numpy().sum()*(-1)
 dualAxisSum = lambda : dualAxis(albedo=0.2, freq='1h',loc = PLACE)['ac_power'].to_numpy().sum()*(-1)
