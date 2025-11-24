@@ -4,15 +4,15 @@ import numpy as np
 from pathlib import Path
 import os
 
-
-def fixed_solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
-                      dni=None, dhi=None, ghi=None,
-                      albedo=0.2, freq='1h'):
+def fixed_solar_Energy_calc(surface_tilt, surface_azimuth,
+                            dni=None, dhi=None, ghi=None,
+                            albedo=0.2, freq='1h'):
     """
     计算太阳能板输出功率与板面辐照度（POA）
     支持 tilt 随时间变化，支持 DNI/DHI/GHI 自动推算关系。
 
     参数
+
     ----
     surface_tilt : float 或 array
         面倾角（度），可为时间序列的 np.array
@@ -26,19 +26,34 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
         时间分辨率
     """
 
-    latitude, longitude, start_date, end_date = para
+
 
     # 时间序列
-    times = pd.date_range(start=start_date, end=end_date, freq=freq, tz="Asia/Shanghai")
-
-    # 地点对象
-    location = pvlib.location.Location(latitude=latitude, longitude=longitude, tz="Asia/Shanghai", altitude=0)
 
     # 气象数据
     current_dir = os.path.dirname(__file__)
     epw_file_path = os.path.join(current_dir, 'data', 'Chongqing.epw')
     weather_data, meta_data = pvlib.iotools.read_epw(epw_file_path)
 
+    #times = pd.date_range(start="2022-01-01", end="2022-12-31", freq = '1h', tz="Asia/Shanghai")    # 地点对象
+
+    start_date = pd.to_datetime('2021-01-01').tz_localize('Asia/Shanghai')
+    end_date = pd.to_datetime('2021-12-31').tz_localize('Asia/Shanghai')
+
+    N = len(weather_data)  # 按 tracker 的数量分成 N 段
+
+    # 转换为时间戳
+    start_ts = start_date.value
+    end_ts = end_date.value
+
+    # 切成 N 份 → 需要 N+1 个边界点
+    cut_points = np.linspace(start_ts, end_ts, N )
+
+    # 转回日期
+    times = pd.to_datetime(cut_points).tz_localize('Asia/Shanghai')
+    weather_data['time'] = times
+    weather_data.set_index('time', inplace=True)
+    location = pvlib.location.Location(latitude=meta_data['latitude'], longitude=meta_data['longitude'], tz="Asia/Shanghai", altitude=meta_data['altitude'])
 
     # 太阳位置
     solpos = location.get_solarposition(times)
@@ -49,48 +64,29 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
     N = len(times)
 
     # Convert scalars to arrays
-    arr = lambda x : np.full(N, x) if np.isscalar(x) else np.array(x)
+    arr = lambda x: np.full(N, x) if np.isscalar(x) else np.array(x)
 
-    # Case 1: Only GHI → use Erbs model to get DNI, DHI
-    if ghi is not None and dni is None and dhi is None:
-        dhi = pvlib.irradiance.erbs(
-            ghi, solar_zenith, times
-        )["dhi"].values
-        dni = pvlib.irradiance.dirint(
-            ghi, solar_zenith, times
-        )  # W/m2
+    dni = weather_data['dni']
+    dhi = weather_data['dhi']
+    ghi = weather_data['ghi']
 
-    # Case 2: Provided DNI and DHI → compute GHI
-    if ghi is None and dni is not None and dhi is not None:
-        ghi = dhi + dni * np.cos(np.radians(solar_zenith))
-
-    # Case 3: All provided → trust user but convert to array
-    if ghi is not None:
-        ghi = arr(ghi)
-
-    # 5. surface_tilt 处理（允许时间变化）
-    if np.isscalar(surface_tilt):
-        tilt = np.full(N, surface_tilt)
-    else:
-        tilt = np.array(surface_tilt)
 
     # 6. 计算 POA
-    #将NaN转为0
-    dni = np.where(np.isnan(dni)==True, 0, dni)
-    dhi = np.where(np.isnan(dhi)==True, 0, dhi)
-  
-   
+
+
+
     poa = pvlib.irradiance.get_total_irradiance(
-            surface_tilt=tilt,
-            surface_azimuth=surface_azimuth,
-            solar_zenith=solar_zenith,
-            solar_azimuth=solar_azimuth,
-            dni=dni,
-            ghi=ghi,
-            dhi=dhi,
-            albedo=albedo,
-        
+        surface_tilt=surface_tilt,
+        surface_azimuth=surface_azimuth,
+        solar_zenith=solpos['apparent_zenith'],
+        solar_azimuth=solpos['azimuth'],
+        dni=dni,
+        ghi=ghi,
+        dhi=dhi,
+        albedo=albedo
     )
+    poa.fillna(0, inplace=True)
+
     # 7. PVWatts 功率模型
     pdc = pvlib.pvsystem.pvwatts_dc(
         poa["poa_global"],
@@ -99,7 +95,11 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
         gamma_pdc=-0.003
     )
 
-    # 8. 输出 dataframe
+    # 使用逆变器模型计算交流功率
+
+    ac_power = pvlib.inverter.pvwatts(pdc, 300)
+
+    # 输出 dataframe
     df = pd.DataFrame({
         "solar_zenith": solar_zenith,
         "solar_azimuth": solar_azimuth,
@@ -107,59 +107,15 @@ def fixed_solar_Energy_calc(surface_tilt, surface_azimuth, para=None,
         "dhi": dhi,
         "ghi": ghi,
         "poa_global": poa["poa_global"],
-        "pdc": pdc,
-        "tilt": tilt,
+        "dc_power": pdc,
+        "ac_power": ac_power,  # 输出逆变器交流功率
+
     }, index=times)
+
 
     return df
 
 
-#
-dfs = fixed_solar_Energy_calc (
-    surface_tilt=30,
-    surface_azimuth=180,
-    para=[31.2, 121.5, "2025-05-01", "2025-05-03"],
-    ghi=600
-)
-dfd = single_solar_Energy_calc(axis_tilt=0,axis_azimuth=90,
-                               para=[31.2, 121.5, "2025-05-01", "2025-05-03"],
-                               ghi=600)
-print(dfd)
-# Compute hours per time step (robust to single-point series)
-if len(df.index) > 1:
-    hours_per_period = (df.index[1] - df.index[0]).total_seconds() / 3600.0
-else:
-    hours_per_period = 1.0
+a = fixed_solar_Energy_calc(surface_tilt=20, surface_azimuth=20, albedo=0.2, freq='1h')
+print(a)
 
-# Energy per period in Wh, then kWh
-dfs['energy_Wh'] = df['pdc'] * hours_per_period
-dfs['energy_kWh'] = df['energy_Wh'] / 1000.0
-
-# Aggregate to annual totals (year-end frequency). Use 'YE' to avoid FutureWarning.
-annual = df['energy_kWh'].resample('YE').sum()
-annual.index = annual.index.year
-annual_df = annual.to_frame(name='annual_energy_kWh')
-
-"""
-# Print and save annual totals (change path if desired)
-print(annual_df)
-
-# Determine a portable output directory (script folder if available, otherwise cwd)
-try:
-    script_dir = Path(__file__).parent
-except NameError:
-    script_dir = Path.cwd()
-
-output_dir = script_dir / "outputs"
-output_dir.mkdir(parents=True, exist_ok=True)
-output_path = output_dir / "annual_energy.csv"
-
-try:
-    annual_df.to_csv(output_path, index=True, encoding="utf-8-sig")
-    print(f"Saved annual energy to: {output_path}")
-except Exception as e:
-    # fallback to user's home directory
-    fallback = Path.home() / "annual_energy.csv"
-    annual_df.to_csv(fallback, index=True, encoding="utf-8-sig")
-    print(f"Failed to save to {output_path!s}, saved to {fallback!s} instead. Error: {e}")
-"""
