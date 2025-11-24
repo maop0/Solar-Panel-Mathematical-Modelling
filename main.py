@@ -41,7 +41,7 @@ print(f"results for dualAxisSum is {-dualAxisSum()}")
 #======sort and compare========
 
 # Compute the dual-axis value once (it has no variables)
-dual_val = -dualAxisSum([0])   # dummy input, ignored by the function
+dual_val = -dualAxisSum()   # dummy input, ignored by the function
 
 results = {
     "fixed_panel": -fixedPanelSum(r.x),
