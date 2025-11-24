@@ -226,6 +226,7 @@ def single_solar_Energy_calc(axis_tilt, axis_azimuth, para=None,
 
     return df
 
+#
 dfs = fixed_solar_Energy_calc (
     surface_tilt=30,
     surface_azimuth=180,
