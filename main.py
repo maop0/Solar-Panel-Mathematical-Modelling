@@ -4,6 +4,8 @@ import single_axis
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
 import numpy as np
+import pandas as pd
+import os
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -15,9 +17,9 @@ singleAxis = single_axis.single_solar_Energy_calc
 fixedPanel = fixed_panel.fixed_solar_Energy_calc
 
 #=============================在这里改位置！！！================================
-#PLACE = 'Chongqing.epw' #albedo=0.2
-PLACE = 'Lhasa.epw'    #albedo=0.4
-#PLACE = 'Urumqi.epw'   #albedo=0.4
+PLACE = 'Chongqing.epw'  #albedo=0.2
+#PLACE = 'Lhasa.epw'     #albedo=0.4
+#PLACE = 'Urumqi.epw'    #albedo=0.4
 print("\n======== THIS IS " + PLACE +" ===========")
 if(PLACE=='Chongqing.epw'):
     alb = 0.2
@@ -58,3 +60,11 @@ sorted_results = dict(sorted(results.items(), key=lambda x: x[1], reverse=True))
 print("\n========= Sorted Energy Results (best → worst) =========")
 for k, v in sorted_results.items():
     print(f"{k}: {v}")
+
+# Save results to CSV
+if not os.path.exists("outputs"):
+    os.makedirs("outputs")
+output_file_path = "outputs/" + PLACE[0:-4] + "_results.csv"
+results_df = pd.DataFrame(sorted_results.items(), columns=["Tracking System", "Energy Output (Wh)"])
+results_df.to_csv(output_file_path, index=False)
+print(f"\nResults have been saved to '{output_file_path}'.")
