@@ -16,7 +16,7 @@ dualAxis = dual_axis.dual_solar_Energy_calc
 singleAxis = single_axis.single_solar_Energy_calc
 fixedPanel = fixed_panel.fixed_solar_Energy_calc
 
-#=============================在这里改位置！！！================================
+# location
 PLACE = 'Chongqing.epw'  #albedo=0.2
 #PLACE = 'Lhasa.epw'     #albedo=0.4
 #PLACE = 'Urumqi.epw'    #albedo=0.4
