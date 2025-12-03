@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import os
 import warnings
+import torch
 
 warnings.filterwarnings("ignore")
 
@@ -29,8 +30,20 @@ fixedPanelSum = lambda x: fixedPanel(surface_tilt=x[0], surface_azimuth=x[1], al
 dualAxisSum = lambda : dualAxis(albedo=alb, freq='1h', loc = PLACE)['ac_power'].to_numpy().sum()*(-1)
 singleAxisSum = lambda x: singleAxis(x[0], x[1], albedo=alb, freq='1h', loc = PLACE)['ac_power'].to_numpy().sum()*(-1)
 
+def minimize(func, x0, lr=0.01, steps=5000):
+    x = torch.tensor(x0, dtype=torch.float32, requires_grad=True)
+    optimizer = torch.optim.Adam([x], lr=lr)
+    for i in range(steps):
+        optimizer.zero_grad()
+        x_np = x.detach().cpu().numpy()
+        loss = func(x_np)
+        loss = torch.tensor(loss, dtype=torch.float32)
+        loss.backward()
+        optimizer.step()
+    return x.detach().numpy()
 
 r = opt.minimize(fixedPanelSum,[0,0])
+r1 = minimize(fixedPanelSum,[0,0])
 print("=========Results===========")
 print(r)
 print(f"The optimum value for fixedPanelSum is {-fixedPanelSum(r.x)}\nwith surface_tilt and surface_azimuth being{r.x}")
